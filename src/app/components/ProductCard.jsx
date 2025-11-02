@@ -8,8 +8,8 @@ export default function ProductCard({product, onAdd}) {
             <h2>{name}</h2>
             <p>Category: {category}</p>
             <p>Price: ${price}</p>
-            <p>{stock > 0 ? 'In stock: ${stock}' : 'Out of Stock'}</p>
-            <button disabled= {stock <= 0} onClick= {() => onAdd(product)}> {stock <= 0 ? 'sold Out' : 'Add to Cart'}</button>
+            <p>{stock > 0 ? `In stock: ${stock}` : 'Out of Stock'}</p>
+            <button disabled= {stock <= 0} onClick= {() => onAdd(product)}> {stock <= 0 ? 'Sold Out' : 'Add to Cart'}</button>
         </div>
     );
 }

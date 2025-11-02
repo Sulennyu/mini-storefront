@@ -1,9 +1,9 @@
 'use client'
 
-import ProductList from "./components/ProductList"
+import Catalog from "./components/Catalog"
 
 export default function Home() {
   return (
-    <ProductList/>
+    <Catalog/>
   )
 }

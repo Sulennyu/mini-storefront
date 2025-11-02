@@ -6,7 +6,7 @@ export default function CategoryFilter ({value, onChange}) {
     return (
         <label>
             Category: 
-            <select value={value} onChange={event => (event.target.value)}>
+            <select value={value} onChange={event => onChange(event.target.value)}>
                 {categories.map( c => (
                     <option key={c} value={c}>{c || 'All'}</option>
                 ))}
