@@ -1,68 +1,89 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import ProductList from './ProductList';
+import CartSummary from './CartSummary';
 import CategoryFilter from './CategoryFilter';
 import PriceFilter from './PriceFilter';
-import CartSummary from './CartSummary';
 import StatusMessage from './StatusMessage';
 
 export default function Catalog() {
-    const [products, setProducts] = useState([]);
-    const [filters, setFilters] = useState({price:'', category: ''});
-    const [cart, setcart] = useState([]);
-    const [status, setStatus] = useState('loading');
+  const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [category, setCategory] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [status, setStatus] = useState('loading');
+  // Fetch products
+  useEffect(() => {
+      fetch('/api/products')
+      .then(res => res.json())
+      .then (data => { setProducts(data); setStatus(data.length === 0 ? 'empty' : '');
+      })
+      .catch (error => {console.error(error); setStatus('error');
+      });
+  }, []);
 
-    const updateFilter = (key,value) => setFilters(prev => ({...prev, [key]: value }));
-// Loading products
-    useEffect(() => {
-        async function load() {
-            try {
-                const res = await fetch ('/api/products');
-                const data = await res.json();
-                setProducts(data);
-                setStatus(data.length ? 'ready' : 'empty');
-            } catch {
-                setStatus ('error');
-            }
-        }
-        load();
-    }, []);
-    
-// filtering products
-
-    const filteredProducts = products.filter (p => 
-    (!filters.category || p.category === filters.category) &&
-    (!filters.price || p.price <= Number(filters.price))
-
-    );
-// Interval Stock Updates 
-
-    useEffect(() => {
-        const interval = setInterval (() => {
-            setProducts(prev => 
-                prev.map (p => ({...p, stock: p.stock < p.initialStock ? p.stock +1 : p.stock,
-                }))
-            );
-        }, 2000);
+  useEffect(() => {
+     const interval = setInterval (() => {
+       setProducts(prev => prev.map (p => ({...p, stock: p.stock < p.initialStock ? p.stock +1 : p.stock,   
+        }))
+       );
+     }, 2000);
         return () =>clearInterval(interval);
     }, []);
 
-    const addToCart = (product) => {
-        if (product.stock <= 0) return;
-        setcart(prev=> [...prev,product]);
-        setProducts (p => p.id === product.id ? {...p, stock: p.stock-1} :p )
-    };
-    const clearCart = () => setcart([]);
+  // Add to cart
+  const addCart = product => {
+    if (product.stock <= 0) return;
+    setCart(prev => {
+      const adding = prev.find(item => item.id === product.id);
+      if (adding) {
+        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
 
-    return (
-        <div> 
-            <h1> Mini Storefront</h1>
-            <CategoryFilter value={filters.category} onChange={v => updateFilter('category',v)} />
-            <PriceFilter value={filters.price} onChange= {v => updateFilter('price', v)} />
-            <CartSummary cart={cart} onClear={clearCart} />
-            <StatusMessage status={status} />
-            {status === 'ready' && (<ProductList products={filteredProducts} onAdd={addToCart} />)}
-        </div>
+    // Reducing stock
+    setProducts(prev =>
+      prev.map(p => p.id === product.id && p.stock > 0 ? { ...p, stock: p.stock - 1 } : p)
     );
+  };
+  // Decrement cart items
+  const handleDecrement = id => {
+    setCart(prev =>
+      prev.map(item => item.id === id ? { ...item, quantity: item.quantity - 1 } : item)
+        .filter(item => item.quantity > 0)
+    );
+    setProducts(prev =>
+      prev.map(p => (p.id === id ? { ...p, stock: p.stock + 1 } : p))
+    );
+  };
+  // Reset cart
+  const handleReset = () => {
+    setCart([]);
+    setProducts(prev => 
+        prev.map(p => {
+            const handled = cart.find(c => c.id === p.id);
+            return handled ? {...p, stock: p.stock + handled.quantity } : p;
+        })
+    );
+  };
+  // Filter products
+  const filteredProducts = products.filter(p => 
+    (!category || p.category === category) &&
+    (!maxPrice || p.price <= Number(maxPrice))
+  );
+  return (
+    <div className="catalog">
+      <h1>Mini Storefront</h1>
+      <div className="catalog-header">
+        <CategoryFilter value={category} onChange={setCategory} />
+        <PriceFilter value={maxPrice} onChange={setMaxPrice} />
+      </div>
+         <CartSummary cart={cart} decrement={handleDecrement} reset={handleReset} />
+         {status ? ( <StatusMessage status={status} /> ) : (
+         <ProductList products={filteredProducts} onAdd={addCart} />
+      )}
+    </div>
+  );
 }

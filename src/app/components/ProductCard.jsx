@@ -4,7 +4,7 @@ export default function ProductCard({product, onAdd}) {
     const {name,price,stock,category} = product;
 
     return (
-        <div>
+        <div className= "product-card">
             <h2>{name}</h2>
             <p>Category: {category}</p>
             <p>Price: ${price}</p>
